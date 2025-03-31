@@ -1,9 +1,9 @@
 # 🧠 AI Study Assistant - Flask Web Application
 
-![GitHub repo size](https://img.shields.io/github/repo-size/yourusername/AI-Study-Assistant-Flask)
-![GitHub stars](https://img.shields.io/github/stars/yourusername/AI-Study-Assistant-Flask?style=social)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/AI-Study-Assistant-Flask?style=social)
-![License](https://img.shields.io/github/license/yourusername/AI-Study-Assistant-Flask)
+![GitHub repo size](https://img.shields.io/github/repo-size/JiteshShelke/AI-Study-Assistant-Flask)
+![GitHub stars](https://img.shields.io/github/stars/JiteshShelke/AI-Study-Assistant-Flask?style=social)
+![GitHub forks](https://img.shields.io/github/forks/JiteshShelke/AI-Study-Assistant-Flask?style=social)
+![License](https://img.shields.io/github/license/JiteshShelke/AI-Study-Assistant-Flask)
 
 🚀 **AI Study Assistant** is a Flask-based web application that integrates multiple NLP models for **question generation, text summarization, question answering, and study plan generation**. It utilizes cutting-edge AI models to assist students in streamlining their learning process.  
 
