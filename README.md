@@ -118,10 +118,13 @@ python app.py
 ## 🖼️ Screenshots
 
 🔹 **Home Page**  
-![Home Page](https://via.placeholder.com/800x400.png?text=Home+Page+Preview)
+![Home Page](./images/home.png)
 
 🔹 **Question Generator**  
-![Question Generator](https://via.placeholder.com/800x400.png?text=Question+Generator+Preview)
+![Question Generator](./images/1.png)
+![Summariezer Context](./images/2.png)
+![Question Answering](./images/3.png)
+![Study Plan Generator](./images/4.png)
 
 ---
 
