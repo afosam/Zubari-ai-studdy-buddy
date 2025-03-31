@@ -122,8 +122,14 @@ python app.py
 
 🔹 **Question Generator**  
 ![Question Generator](./images/1.png)
+
+🔹 **Summariezer Context** 
 ![Summariezer Context](./images/2.png)
+
+🔹 **Question Answering** 
 ![Question Answering](./images/3.png)
+
+🔹 **Study Plan Generator** 
 ![Study Plan Generator](./images/4.png)
 
 ---
