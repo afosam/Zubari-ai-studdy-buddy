@@ -152,8 +152,8 @@ This project is licensed under the **MIT License**. Feel free to use and modify 
 ## 📞 Contact
 For queries or collaborations, reach out:
 
-📧 Email: `your.email@example.com`  
-🔗 LinkedIn:(inkedin.com/in/jitesh-shelke-702745286/)  
+📧 Email: `jiteshshelke09@gmail.com`  
+🔗 LinkedIn: (linkedin.com/in/jitesh-shelke-702745286/)  
 🌎 GitHub:(https://github.com/JiteshShelke/Jtxmaster)  
 
 ---
