@@ -163,7 +163,7 @@ For queries or collaborations, reach out:
 
 📧 Email: `jiteshshelke09@gmail.com`  
 🔗 LinkedIn: (https://www.linkedin.com/in/jitesh-shelke-702745286/)  
-🌎 GitHub:(https://github.com/JiteshShelke/Jtxmaster)  
+🌎 GitHub:(https://github.com/JiteshShelke)  
 
 ---
 
