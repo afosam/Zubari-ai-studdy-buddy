@@ -1,101 +1,145 @@
-from flask import Flask, render_template, request
-import sqlite3
+from flask import Flask, render_template, request, session, jsonify
+import mysql.connector
+from mysql.connector import Error
 import bcrypt
-from flask import session, jsonify
 import os
 from datetime import datetime, timedelta
+import secrets
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='public', static_url_path='')
 app.secret_key = 'zubari-ai-secret-key-2025'
 
-# Database setup
-def init_db():
-    conn = sqlite3.connect('zubari.db')
-    cursor = conn.cursor()
-    
-    # Users table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            subscription_type TEXT DEFAULT 'free',
-            subscription_expires DATE,
-            ai_requests_used INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Payments table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            amount REAL NOT NULL,
-            currency TEXT DEFAULT 'KES',
-            subscription_type TEXT NOT NULL,
-            payment_reference TEXT UNIQUE,
-            status TEXT DEFAULT 'pending',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    ''')
-    
-    # AI requests log
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS ai_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            request_type TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+# MySQL Database Configuration
+DB_CONFIG = {
+    'host': 'localhost',
+    'database': 'zubari_ai',
+    'user': 'root',
+    'password': '',  # Update with your MySQL password
+    'charset': 'utf8mb4',
+    'collation': 'utf8mb4_unicode_ci'
+}
 
-# Initialize database
-init_db()
+def get_db_connection():
+    """Create and return a database connection"""
+    try:
+        connection = mysql.connector.connect(**DB_CONFIG)
+        return connection
+    except Error as e:
+        print(f"Error connecting to MySQL: {e}")
+        return None
 
-# Authentication middleware
-def require_auth():
-    if 'user_id' not in session:
+def init_database():
+    """Initialize the database and create tables"""
+    connection = get_db_connection()
+    if not connection:
         return False
-    return True
+    
+    cursor = connection.cursor()
+    
+    try:
+        # Create database if it doesn't exist
+        cursor.execute("CREATE DATABASE IF NOT EXISTS zubari_ai")
+        cursor.execute("USE zubari_ai")
+        
+        # Users table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                subscription_type ENUM('free', 'premium') DEFAULT 'free',
+                subscription_expires DATETIME NULL,
+                ai_requests_used INT DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Payments table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS payments (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT,
+                amount DECIMAL(10,2) NOT NULL,
+                currency VARCHAR(3) DEFAULT 'KES',
+                subscription_type ENUM('monthly', 'yearly') NOT NULL,
+                payment_reference VARCHAR(255) UNIQUE,
+                status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+        
+        # AI requests log
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ai_requests (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT,
+                request_type ENUM('question_generation', 'summarization', 'question_answering', 'study_plan_generation') NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+        
+        connection.commit()
+        print("Database initialized successfully")
+        return True
+        
+    except Error as e:
+        print(f"Error initializing database: {e}")
+        return False
+    finally:
+        cursor.close()
+        connection.close()
+
+# Initialize database on startup
+init_database()
+
+def require_auth():
+    """Check if user is authenticated"""
+    return 'user_id' in session
 
 def check_subscription():
+    """Check user subscription status and limits"""
     if not require_auth():
         return {'error': 'Authentication required'}, False
     
-    conn = sqlite3.connect('zubari.db')
-    cursor = conn.cursor()
+    connection = get_db_connection()
+    if not connection:
+        return {'error': 'Database connection failed'}, False
     
-    cursor.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],))
-    user = cursor.fetchone()
-    conn.close()
+    cursor = connection.cursor(dictionary=True)
     
-    if not user:
-        return {'error': 'User not found'}, False
-    
-    # Check if user has premium subscription
-    subscription_type = user[3]  # subscription_type column
-    subscription_expires = user[4]  # subscription_expires column
-    ai_requests_used = user[5]  # ai_requests_used column
-    
-    is_subscribed = False
-    if subscription_type == 'premium' and subscription_expires:
-        expires_date = datetime.strptime(subscription_expires, '%Y-%m-%d %H:%M:%S')
-        is_subscribed = expires_date > datetime.now()
-    
-    if not is_subscribed and ai_requests_used >= 5:
-        return {
-            'error': 'Free tier limit reached. Please upgrade to premium for unlimited access.',
-            'requiresUpgrade': True
-        }, False
-    
-    return user, True
+    try:
+        cursor.execute('SELECT * FROM users WHERE id = %s', (session['user_id'],))
+        user = cursor.fetchone()
+        
+        if not user:
+            return {'error': 'User not found'}, False
+        
+        # Check if user has premium subscription
+        subscription_type = user['subscription_type']
+        subscription_expires = user['subscription_expires']
+        ai_requests_used = user['ai_requests_used']
+        
+        is_subscribed = False
+        if subscription_type == 'premium' and subscription_expires:
+            is_subscribed = subscription_expires > datetime.now()
+        
+        if not is_subscribed and ai_requests_used >= 5:
+            return {
+                'error': 'Free tier limit reached. Please upgrade to premium for unlimited access.',
+                'requiresUpgrade': True
+            }, False
+        
+        return user, True
+        
+    except Error as e:
+        return {'error': 'Database error'}, False
+    finally:
+        cursor.close()
+        connection.close()
 
+# Routes
 @app.route("/")
 def home():
     return app.send_static_file('index.html')
@@ -129,22 +173,28 @@ def signup():
     # Hash password
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     
-    conn = sqlite3.connect('zubari.db')
-    cursor = conn.cursor()
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'})
+    
+    cursor = connection.cursor()
     
     try:
-        cursor.execute('INSERT INTO users (email, password) VALUES (?, ?)', 
+        cursor.execute('INSERT INTO users (email, password) VALUES (%s, %s)', 
                       (email, hashed_password))
         user_id = cursor.lastrowid
-        conn.commit()
+        connection.commit()
         
         session['user_id'] = user_id
         return jsonify({'success': True})
         
-    except sqlite3.IntegrityError:
+    except mysql.connector.IntegrityError:
         return jsonify({'error': 'Email already exists'})
+    except Error as e:
+        return jsonify({'error': 'Registration failed'})
     finally:
-        conn.close()
+        cursor.close()
+        connection.close()
 
 @app.route("/api/login", methods=["POST"])
 def login():
@@ -152,18 +202,27 @@ def login():
     email = data.get('email')
     password = data.get('password')
     
-    conn = sqlite3.connect('zubari.db')
-    cursor = conn.cursor()
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'})
     
-    cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
-    user = cursor.fetchone()
-    conn.close()
+    cursor = connection.cursor(dictionary=True)
     
-    if not user or not bcrypt.checkpw(password.encode('utf-8'), user[2]):
-        return jsonify({'error': 'Invalid credentials'})
-    
-    session['user_id'] = user[0]
-    return jsonify({'success': True})
+    try:
+        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+        user = cursor.fetchone()
+        
+        if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+            return jsonify({'error': 'Invalid credentials'})
+        
+        session['user_id'] = user['id']
+        return jsonify({'success': True})
+        
+    except Error as e:
+        return jsonify({'error': 'Login failed'})
+    finally:
+        cursor.close()
+        connection.close()
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
@@ -175,29 +234,37 @@ def user_status():
     if 'user_id' not in session:
         return jsonify({'error': 'Not authenticated'})
     
-    conn = sqlite3.connect('zubari.db')
-    cursor = conn.cursor()
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'})
     
-    cursor.execute('SELECT email, subscription_type, subscription_expires, ai_requests_used FROM users WHERE id = ?', 
-                  (session['user_id'],))
-    user = cursor.fetchone()
-    conn.close()
+    cursor = connection.cursor(dictionary=True)
     
-    if not user:
-        return jsonify({'error': 'User not found'})
-    
-    is_subscribed = False
-    if user[1] == 'premium' and user[2]:
-        expires_date = datetime.strptime(user[2], '%Y-%m-%d %H:%M:%S')
-        is_subscribed = expires_date > datetime.now()
-    
-    return jsonify({
-        'email': user[0],
-        'subscriptionType': user[1],
-        'isSubscribed': is_subscribed,
-        'requestsUsed': user[3],
-        'requestsRemaining': 'unlimited' if is_subscribed else max(0, 5 - user[3])
-    })
+    try:
+        cursor.execute('SELECT email, subscription_type, subscription_expires, ai_requests_used FROM users WHERE id = %s', 
+                      (session['user_id'],))
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({'error': 'User not found'})
+        
+        is_subscribed = False
+        if user['subscription_type'] == 'premium' and user['subscription_expires']:
+            is_subscribed = user['subscription_expires'] > datetime.now()
+        
+        return jsonify({
+            'email': user['email'],
+            'subscriptionType': user['subscription_type'],
+            'isSubscribed': is_subscribed,
+            'requestsUsed': user['ai_requests_used'],
+            'requestsRemaining': 'unlimited' if is_subscribed else max(0, 5 - user['ai_requests_used'])
+        })
+        
+    except Error as e:
+        return jsonify({'error': 'Failed to get user status'})
+    finally:
+        cursor.close()
+        connection.close()
 
 # AI service routes
 @app.route("/api/generate-questions", methods=["POST"])
@@ -213,15 +280,21 @@ def generate_questions():
         return jsonify({'error': 'Please provide a paragraph'})
     
     # Increment AI request count for free users
-    if user[3] != 'premium':  # subscription_type
-        conn = sqlite3.connect('zubari.db')
-        cursor = conn.cursor()
-        cursor.execute('UPDATE users SET ai_requests_used = ai_requests_used + 1 WHERE id = ?', 
-                      (session['user_id'],))
-        cursor.execute('INSERT INTO ai_requests (user_id, request_type) VALUES (?, ?)', 
-                      (session['user_id'], 'question_generation'))
-        conn.commit()
-        conn.close()
+    if user['subscription_type'] != 'premium':
+        connection = get_db_connection()
+        if connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute('UPDATE users SET ai_requests_used = ai_requests_used + 1 WHERE id = %s', 
+                              (session['user_id'],))
+                cursor.execute('INSERT INTO ai_requests (user_id, request_type) VALUES (%s, %s)', 
+                              (session['user_id'], 'question_generation'))
+                connection.commit()
+            except Error as e:
+                pass
+            finally:
+                cursor.close()
+                connection.close()
     
     # Mock AI response (replace with actual AI integration)
     questions = [
@@ -247,15 +320,21 @@ def summarize():
         return jsonify({'error': 'Please provide text to summarize'})
     
     # Increment AI request count for free users
-    if user[3] != 'premium':  # subscription_type
-        conn = sqlite3.connect('zubari.db')
-        cursor = conn.cursor()
-        cursor.execute('UPDATE users SET ai_requests_used = ai_requests_used + 1 WHERE id = ?', 
-                      (session['user_id'],))
-        cursor.execute('INSERT INTO ai_requests (user_id, request_type) VALUES (?, ?)', 
-                      (session['user_id'], 'summarization'))
-        conn.commit()
-        conn.close()
+    if user['subscription_type'] != 'premium':
+        connection = get_db_connection()
+        if connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute('UPDATE users SET ai_requests_used = ai_requests_used + 1 WHERE id = %s', 
+                              (session['user_id'],))
+                cursor.execute('INSERT INTO ai_requests (user_id, request_type) VALUES (%s, %s)', 
+                              (session['user_id'], 'summarization'))
+                connection.commit()
+            except Error as e:
+                pass
+            finally:
+                cursor.close()
+                connection.close()
     
     # Mock AI response (replace with actual AI integration)
     summary = text[:200] + "..." if len(text) > 200 else text
@@ -277,15 +356,21 @@ def answer_question():
         return jsonify({'error': 'Please provide both context and question'})
     
     # Increment AI request count for free users
-    if user[3] != 'premium':  # subscription_type
-        conn = sqlite3.connect('zubari.db')
-        cursor = conn.cursor()
-        cursor.execute('UPDATE users SET ai_requests_used = ai_requests_used + 1 WHERE id = ?', 
-                      (session['user_id'],))
-        cursor.execute('INSERT INTO ai_requests (user_id, request_type) VALUES (?, ?)', 
-                      (session['user_id'], 'question_answering'))
-        conn.commit()
-        conn.close()
+    if user['subscription_type'] != 'premium':
+        connection = get_db_connection()
+        if connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute('UPDATE users SET ai_requests_used = ai_requests_used + 1 WHERE id = %s', 
+                              (session['user_id'],))
+                cursor.execute('INSERT INTO ai_requests (user_id, request_type) VALUES (%s, %s)', 
+                              (session['user_id'], 'question_answering'))
+                connection.commit()
+            except Error as e:
+                pass
+            finally:
+                cursor.close()
+                connection.close()
     
     # Mock AI response (replace with actual AI integration)
     answer = "This is a mock answer based on the provided context. Please integrate with actual AI models for real question answering."
@@ -308,15 +393,21 @@ def generate_study_plan():
         return jsonify({'error': 'Please fill in all fields'})
     
     # Increment AI request count for free users
-    if user[3] != 'premium':  # subscription_type
-        conn = sqlite3.connect('zubari.db')
-        cursor = conn.cursor()
-        cursor.execute('UPDATE users SET ai_requests_used = ai_requests_used + 1 WHERE id = ?', 
-                      (session['user_id'],))
-        cursor.execute('INSERT INTO ai_requests (user_id, request_type) VALUES (?, ?)', 
-                      (session['user_id'], 'study_plan_generation'))
-        conn.commit()
-        conn.close()
+    if user['subscription_type'] != 'premium':
+        connection = get_db_connection()
+        if connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute('UPDATE users SET ai_requests_used = ai_requests_used + 1 WHERE id = %s', 
+                              (session['user_id'],))
+                cursor.execute('INSERT INTO ai_requests (user_id, request_type) VALUES (%s, %s)', 
+                              (session['user_id'], 'study_plan_generation'))
+                connection.commit()
+            except Error as e:
+                pass
+            finally:
+                cursor.close()
+                connection.close()
     
     # Mock AI response (replace with actual AI integration)
     study_plan = f"""
@@ -353,20 +444,29 @@ def initiate_payment():
     # Generate payment reference
     payment_reference = f'ZUB_{int(datetime.now().timestamp())}_{session["user_id"]}'
     
-    conn = sqlite3.connect('zubari.db')
-    cursor = conn.cursor()
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'})
     
-    cursor.execute('INSERT INTO payments (user_id, amount, subscription_type, payment_reference) VALUES (?, ?, ?, ?)',
-                  (session['user_id'], amount, subscription_type, payment_reference))
-    conn.commit()
-    conn.close()
+    cursor = connection.cursor()
     
-    return jsonify({
-        'success': True,
-        'paymentReference': payment_reference,
-        'amount': amount,
-        'publicKey': 'pk_test_your_paystack_public_key'  # Replace with actual Paystack public key
-    })
+    try:
+        cursor.execute('INSERT INTO payments (user_id, amount, subscription_type, payment_reference) VALUES (%s, %s, %s, %s)',
+                      (session['user_id'], amount, subscription_type, payment_reference))
+        connection.commit()
+        
+        return jsonify({
+            'success': True,
+            'paymentReference': payment_reference,
+            'amount': amount,
+            'publicKey': 'pk_test_your_paystack_public_key'  # Replace with actual Paystack public key
+        })
+        
+    except Error as e:
+        return jsonify({'error': 'Payment initiation failed'})
+    finally:
+        cursor.close()
+        connection.close()
 
 @app.route("/api/verify-payment", methods=["POST"])
 def verify_payment():
@@ -376,34 +476,41 @@ def verify_payment():
     data = request.get_json()
     payment_reference = data.get('paymentReference')
     
-    conn = sqlite3.connect('zubari.db')
-    cursor = conn.cursor()
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'})
     
-    cursor.execute('SELECT * FROM payments WHERE payment_reference = ? AND user_id = ?', 
-                  (payment_reference, session['user_id']))
-    payment = cursor.fetchone()
+    cursor = connection.cursor(dictionary=True)
     
-    if not payment:
-        conn.close()
-        return jsonify({'error': 'Payment not found'})
-    
-    # Update payment status
-    cursor.execute('UPDATE payments SET status = ? WHERE id = ?', ('completed', payment[0]))
-    
-    # Update user subscription
-    expiry_date = datetime.now()
-    if payment[4] == 'monthly':  # subscription_type
-        expiry_date += timedelta(days=30)
-    else:
-        expiry_date += timedelta(days=365)
-    
-    cursor.execute('UPDATE users SET subscription_type = ?, subscription_expires = ?, ai_requests_used = 0 WHERE id = ?',
-                  ('premium', expiry_date.strftime('%Y-%m-%d %H:%M:%S'), session['user_id']))
-    
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'success': True})
+    try:
+        cursor.execute('SELECT * FROM payments WHERE payment_reference = %s AND user_id = %s', 
+                      (payment_reference, session['user_id']))
+        payment = cursor.fetchone()
+        
+        if not payment:
+            return jsonify({'error': 'Payment not found'})
+        
+        # Update payment status
+        cursor.execute('UPDATE payments SET status = %s WHERE id = %s', ('completed', payment['id']))
+        
+        # Update user subscription
+        expiry_date = datetime.now()
+        if payment['subscription_type'] == 'monthly':
+            expiry_date += timedelta(days=30)
+        else:
+            expiry_date += timedelta(days=365)
+        
+        cursor.execute('UPDATE users SET subscription_type = %s, subscription_expires = %s, ai_requests_used = 0 WHERE id = %s',
+                      ('premium', expiry_date, session['user_id']))
+        
+        connection.commit()
+        return jsonify({'success': True})
+        
+    except Error as e:
+        return jsonify({'error': 'Payment verification failed'})
+    finally:
+        cursor.close()
+        connection.close()
 
 if __name__ == "__main__":
     app.run(debug=True, port=3000)
