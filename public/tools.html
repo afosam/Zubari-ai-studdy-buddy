@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tools - Zubari AI Study Buddy</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Zubari AI Study Buddy</h2>
+            </div>
+            <div class="nav-auth">
+                <button id="loginBtn" class="auth-btn">Log In</button>
+                <button id="signupBtn" class="auth-btn primary">Sign Up</button>
+                <div id="userMenu" class="user-menu hidden">
+                    <span id="userEmail"></span>
+                    <button id="logoutBtn" class="auth-btn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="tool-header">
+            <h1 id="toolTitle">AI Study Tools</h1>
+            <div id="usageInfo" class="usage-info hidden">
+                <span id="requestsRemaining"></span>
+            </div>
+        </div>
+
+        <!-- Question Generator -->
+        <div id="questionGenerator" class="tool-section hidden">
+            <div class="form-container">
+                <h2>Generate Questions</h2>
+                <form id="questionForm">
+                    <div class="form-group">
+                        <textarea id="paragraph" name="paragraph" placeholder="Enter a paragraph to generate questions..." required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Generate Questions</button>
+                </form>
+                <div id="questionResults" class="results-section hidden"></div>
+            </div>
+        </div>
+
+        <!-- Text Summarizer -->
+        <div id="summarizer" class="tool-section hidden">
+            <div class="form-container">
+                <h2>Summarize Text</h2>
+                <form id="summarizerForm">
+                    <div class="form-group">
+                        <textarea id="textToSummarize" name="text" placeholder="Enter text to summarize..." required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Summarize</button>
+                </form>
+                <div id="summaryResults" class="results-section hidden"></div>
+            </div>
+        </div>
+
+        <!-- Question Answering -->
+        <div id="qa" class="tool-section hidden">
+            <div class="form-container">
+                <h2>Question Answering</h2>
+                <form id="qaForm">
+                    <div class="form-group">
+                        <textarea id="context" name="context" placeholder="Enter context (e.g., a paragraph or article)" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="question" name="question" placeholder="Enter your question" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Get Answer</button>
+                </form>
+                <div id="qaResults" class="results-section hidden"></div>
+            </div>
+        </div>
+
+        <!-- Study Plan Generator -->
+        <div id="studyPlan" class="tool-section hidden">
+            <div class="form-container">
+                <h2>Create Study Plan</h2>
+                <form id="studyPlanForm">
+                    <div class="form-group">
+                        <input type="text" id="syllabus" name="syllabus" placeholder="Enter syllabus" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="topics" name="topics" placeholder="Enter topics" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="startDate">Start Date:</label>
+                        <input type="date" id="startDate" name="startDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="deadline">Deadline:</label>
+                        <input type="date" id="deadline" name="deadline" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Generate Plan</button>
+                </form>
+                <div id="studyPlanResults" class="results-section hidden"></div>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="/" id="backToHome">← Back to Home</a>
+        </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Upgrade Required</h2>
+            <p>You've reached your free tier limit of 5 AI requests per month.</p>
+            <p>Upgrade to Premium for unlimited access!</p>
+            <button onclick="window.location.href='/premium.html'" class="premium-btn">View Premium Plans</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

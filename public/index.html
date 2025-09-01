@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zubari AI Study Buddy</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Zubari AI Study Buddy</h2>
+            </div>
+            <div class="nav-auth">
+                <button id="loginBtn" class="auth-btn">Log In</button>
+                <button id="signupBtn" class="auth-btn primary">Sign Up</button>
+                <div id="userMenu" class="user-menu hidden">
+                    <span id="userEmail"></span>
+                    <button id="logoutBtn" class="auth-btn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero-section">
+            <h1>Welcome to Zubari AI Study Buddy</h1>
+            <p class="hero-subtitle">Your intelligent companion for effective learning</p>
+        </div>
+
+        <div class="tool-grid">
+            <div class="tool-box" data-tool="question-generator">
+                <div class="tool-icon">❓</div>
+                <h3>Question Generator</h3>
+                <p>Generate practice questions to test your knowledge on any topic.</p>
+                <button class="tool-btn">Get Started</button>
+            </div>
+            
+            <div class="tool-box" data-tool="summarizer">
+                <div class="tool-icon">📝</div>
+                <h3>Text Summarizer</h3>
+                <p>Summarize long texts or articles into concise and easy-to-read notes.</p>
+                <button class="tool-btn">Get Started</button>
+            </div>
+            
+            <div class="tool-box" data-tool="qa">
+                <div class="tool-icon">🤖</div>
+                <h3>Question Answering</h3>
+                <p>Get instant answers to your questions with AI-powered assistance.</p>
+                <button class="tool-btn">Get Started</button>
+            </div>
+            
+            <div class="tool-box" data-tool="study-plan">
+                <div class="tool-icon">📅</div>
+                <h3>Study Plan Generator</h3>
+                <p>Create a personalized study plan tailored to your goals and schedule.</p>
+                <button class="tool-btn">Get Started</button>
+            </div>
+        </div>
+
+        <div class="premium-banner">
+            <h3>🌟 Upgrade to Premium</h3>
+            <p>Get unlimited AI responses and advanced features</p>
+            <button id="premiumBtn" class="premium-btn">View Plans</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Created by <span>Philip Ondieki</span></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

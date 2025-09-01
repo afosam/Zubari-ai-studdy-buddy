@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Zubari AI Study Buddy</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Zubari AI Study Buddy</h2>
+            </div>
+            <div class="nav-auth">
+                <button onclick="window.location.href='/login.html'" class="auth-btn">Log In</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-form">
+            <h1>Join Zubari AI Study Buddy</h1>
+            <p class="auth-subtitle">Create your account and start learning smarter</p>
+            
+            <form id="signupForm">
+                <div class="form-group">
+                    <input type="email" id="email" name="email" placeholder="Email address" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" name="password" placeholder="Password" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm password" required>
+                </div>
+                <button type="submit" class="auth-submit-btn">Create Account</button>
+            </form>
+            
+            <div id="errorMessage" class="error-message hidden"></div>
+            
+            <p class="auth-switch">
+                Already have an account? 
+                <a href="/login.html">Sign in here</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
