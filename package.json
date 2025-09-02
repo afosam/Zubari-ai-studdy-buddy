@@ -4,7 +4,7 @@
   "description": "Flask-based AI Study Assistant with Premium Features and MySQL Database",
   "main": "app.py",
   "scripts": {
-    "dev": "python app.py",
+    "dev": "python3 -m pip install -r requirements.txt && python3 app.py",
     "start": "python app.py"
   },
   "keywords": [
