@@ -1,24 +1,11 @@
 {
-  "name": "zubari-ai-study-buddy-flask",
+  "name": "zubari-ai-study-buddy",
   "version": "1.0.0",
-  "description": "Flask-based AI Study Assistant with Premium Features and MySQL Database",
-  "main": "app.py",
+  "description": "Frontend + Backend AI Study Assistant",
   "scripts": {
-    "dev": "python3 -m pip install -r requirements.txt && python3 app.py",
-    "start": "python app.py"
+    "dev": "python3 app.py",
+    "start": "python3 app.py"
   },
-  "keywords": [
-    "ai",
-    "study",
-    "education",
-    "flask",
-    "mysql",
-    "paystack"
-  ],
   "author": "Philip Ondieki",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/PhilipOndieki/zubari-ai-study-buddy.git"
-  }
+  "license": "MIT"
 }
